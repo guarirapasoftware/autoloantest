@@ -135,20 +135,31 @@ class ModelComparator:
     
     def get_feature_importance(self, model_name):
         """Возвращает важность признаков для модели."""
-        model = joblib.load(f'models/{model_name}.pkl')
+        try:
+            model = joblib.load(f'models/{model_name}.pkl')
+        except Exception as e:
+            print(f"⚠️ Ошибка загрузки модели {model_name}: {e}")
+            return None
+        
+        # Для деревьев и бустингов
         if hasattr(model, 'feature_importances_'):
             importances = model.feature_importances_
             return pd.DataFrame({
                 'feature': self.features,
                 'importance': importances
             }).sort_values('importance', ascending=False)
+        
+        # Для линейных моделей (LogisticRegression)
         elif hasattr(model, 'coef_'):
-            # Для LogisticRegression берем абсолютные значения коэффициентов
-            importances = abs(model.coef_[0])
-            return pd.DataFrame({
-                'feature': self.features,
-                'importance': importances
-            }).sort_values('importance', ascending=False)
+            try:
+                importances = abs(model.coef_[0])
+                return pd.DataFrame({
+                    'feature': self.features,
+                    'importance': importances
+                }).sort_values('importance', ascending=False)
+            except Exception:
+                return None
+        
         return None
 
 if __name__ == '__main__':
